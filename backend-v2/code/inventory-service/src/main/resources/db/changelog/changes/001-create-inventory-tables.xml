@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-warehouses" author="antigravity">
+        <createTable tableName="warehouses">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(30)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-inventory-items" author="antigravity">
+        <createTable tableName="inventory_items">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="warehouse_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_inventory_warehouse" references="warehouses(id)" deleteCascade="true"/>
+            </column>
+            <column name="sku" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reserved_quantity" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_stock_threshold" type="INTEGER" defaultValueNumeric="10"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="inventory_items" columnNames="warehouse_id, sku" constraintName="uk_warehouse_sku"/>
+    </changeSet>
+
+    <changeSet id="003-create-stock-adjustments" author="antigravity">
+        <createTable tableName="stock_adjustments">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="item_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_adjustment_item" references="inventory_items(id)"/>
+            </column>
+            <column name="warehouse_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_change" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_quantity" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="new_quantity" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="VARCHAR(255)"/>
+            <column name="adjusted_by" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="adjusted_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,10 @@
+{
+  "latestErrorEvent": {
+    "code": "TYPE-001",
+    "message": "Failed to generate type declaration. Execute the below cmd to reproduce and fix the error. #TYPE-001\nargs: {\"cmd\":\"/Users/haidangdev/.nvm/versions/node/v24.22.0/bin/node /Users/haidangdev/Documents/next-ui/frontend-mf/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsc --project /Users/haidangdev/Documents/next-ui/frontend-mf/apps/approval-remote/node_modules/.federation/tsconfig.ad18bcf7dfdb6af8ca00159154bff260.json\"}\nView the docs to see how to solve: https://module-federation.io/guide/troubleshooting/type#type-001",
+    "args": {
+      "cmd": "/Users/haidangdev/.nvm/versions/node/v24.22.0/bin/node /Users/haidangdev/Documents/next-ui/frontend-mf/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/bin/tsc --project /Users/haidangdev/Documents/next-ui/frontend-mf/apps/approval-remote/node_modules/.federation/tsconfig.ad18bcf7dfdb6af8ca00159154bff260.json"
+    },
+    "timestamp": 1792425105284
+  }
+}

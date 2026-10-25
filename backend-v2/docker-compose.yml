@@ -1,0 +1,175 @@
+services:
+  # ============================================================================
+  # 1. PostgreSQL - Multi-database instance
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: backend-v2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: auth_rbac_db,inventory_db,order_db,keycloak_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 2. Redis - Caching token introspections & coarse auth decisions
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: backend-v2-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 3. Keycloak - Development Identity Provider (OIDC)
+  # ============================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.2
+    container_name: backend-v2-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./docker/keycloak/enterprise-realm.json:/opt/keycloak/data/import/enterprise-realm.json:ro
+    ports:
+      - "8180:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 4. auth-rbac-service - Authentication & RBAC Core
+  # ============================================================================
+  auth-rbac-service:
+    build:
+      context: ./code
+      dockerfile: auth-rbac-service/Dockerfile
+    container_name: backend-v2-auth-rbac
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/auth_rbac_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      IDP_JWKS_URI: http://keycloak:8080/realms/enterprise/protocol/openid-connect/certs
+      IDP_ISSUER_URI: http://localhost:8180/realms/enterprise
+      IDP_PROVIDER_NAME: KEYCLOAK
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 5. gateway-service - Spring Cloud Gateway
+  # ============================================================================
+  gateway-service:
+    build:
+      context: ./code
+      dockerfile: gateway-service/Dockerfile
+    container_name: backend-v2-gateway
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AUTH_SERVICE_URL: http://auth-rbac-service:8081
+      AUTH_INTROSPECT_URL: http://auth-rbac-service:8081/internal/v1/auth/introspect
+      INVENTORY_SERVICE_URL: http://inventory-service:8082
+      ORDER_SERVICE_URL: http://order-service:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - auth-rbac-service
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 6. inventory-service - Admin Inventory Management
+  # ============================================================================
+  inventory-service:
+    build:
+      context: ./code
+      dockerfile: inventory-service/Dockerfile
+    container_name: backend-v2-inventory
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/inventory_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 7. order-service - Admin Order Management
+  # ============================================================================
+  order-service:
+    build:
+      context: ./code
+      dockerfile: order-service/Dockerfile
+    container_name: backend-v2-order
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/order_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-v2-net
+
+networks:
+  backend-v2-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
