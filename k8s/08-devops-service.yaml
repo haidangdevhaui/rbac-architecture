@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devops-service-sa
+  namespace: enterprise-dev
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: devops-service-role
+  namespace: enterprise-dev
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "pods/log", "services", "deployments", "deployments/scale", "replicasets", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devops-service-rb
+  namespace: enterprise-dev
+subjects:
+  - kind: ServiceAccount
+    name: devops-service-sa
+    namespace: enterprise-dev
+roleRef:
+  kind: Role
+  name: devops-service-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-service
+  namespace: enterprise-dev
+  labels:
+    app: devops-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-service
+  template:
+    metadata:
+      labels:
+        app: devops-service
+    spec:
+      serviceAccountName: devops-service-sa
+      containers:
+        - name: devops-service
+          image: backend-v2-devops-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVER_PORT
+              value: "8084"
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres:5432/platform_db"
+            - name: DB_USERNAME
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres"
+            - name: GITEA_API_URL
+              value: "http://gitea:3000/api/v1"
+            - name: GITEA_EXTERNAL_URL
+              value: "http://localhost:3030"
+            - name: GITEA_ADMIN_USERNAME
+              value: "gitea_admin"
+            - name: GITEA_ADMIN_PASSWORD
+              value: "admin123"
+          ports:
+            - containerPort: 8084
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-service
+  namespace: enterprise-dev
+  labels:
+    app: devops-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8084
+      targetPort: 8084
+      name: http
+  selector:
+    app: devops-service

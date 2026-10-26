@@ -281,6 +281,40 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
+  apps/platform-remote:
+    dependencies:
+      '@enterprise/shared-ui':
+        specifier: workspace:*
+        version: link:../../packages/shared-ui
+      lucide-react:
+        specifier: ^0.378.0
+        version: 0.378.0(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@module-federation/enhanced':
+        specifier: ^2.9.2
+        version: 2.9.2(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(typescript@5.9.3)
+      '@rspack/cli':
+        specifier: ^2.2.9
+        version: 2.2.9(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2))(@rspack/dev-server@2.2.1(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)))
+      '@rspack/core':
+        specifier: ^2.2.9
+        version: 2.2.9(@module-federation/runtime-tools@2.9.2)
+      '@types/react':
+        specifier: ^18.3.1
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.31)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   packages/shared-ui:
     dependencies:
       lucide-react:

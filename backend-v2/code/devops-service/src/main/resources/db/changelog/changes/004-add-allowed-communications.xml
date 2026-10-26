@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="004-add-allowed-communications-column" author="antigravity">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="services" columnName="allowed_communications"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="services">
+            <column name="allowed_communications" type="VARCHAR(512)" defaultValue="gateway-service,auth-rbac-service,postgres,redis"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

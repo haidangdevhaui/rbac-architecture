@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-rbac-service
+  namespace: enterprise-dev
+  labels:
+    app: auth-rbac-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-rbac-service
+  template:
+    metadata:
+      labels:
+        app: auth-rbac-service
+    spec:
+      containers:
+        - name: auth-rbac-service
+          image: backend-v2-auth-rbac-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres:5432/auth_rbac_db"
+            - name: DB_USERNAME
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: IDP_JWKS_URI
+              value: "http://keycloak:8080/realms/enterprise/protocol/openid-connect/certs"
+            - name: IDP_ISSUER_URI
+              value: "http://localhost:8180/realms/enterprise"
+            - name: IDP_PROVIDER_NAME
+              value: "KEYCLOAK"
+          ports:
+            - containerPort: 8081
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-rbac-service
+  namespace: enterprise-dev
+  labels:
+    app: auth-rbac-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: http
+  selector:
+    app: auth-rbac-service

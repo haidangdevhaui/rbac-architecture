@@ -7,5 +7,6 @@
 
     <include file="db/changelog/changes/001-create-auth-rbac-tables.xml"/>
     <include file="db/changelog/changes/002-seed-roles-and-permissions.xml"/>
+    <include file="db/changelog/changes/003-seed-platform-permissions.xml"/>
 
 </databaseChangeLog>

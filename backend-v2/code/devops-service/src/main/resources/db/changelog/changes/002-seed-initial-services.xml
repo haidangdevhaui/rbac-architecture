@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="004-seed-catalog-services" author="antigravity">
+        <!-- 1. Order Service -->
+        <insert tableName="services">
+            <column name="id" valueNumeric="1"/>
+            <column name="service_code" value="order-service"/>
+            <column name="display_name" value="Admin Order Management Service"/>
+            <column name="service_type" value="BACKEND_SPRING"/>
+            <column name="description" value="Quản lý vòng đời đơn hàng, duyệt đơn, hủy đơn, tích hợp SLA và log phê duyệt"/>
+            <column name="owner_team" value="Order Domain Team"/>
+            <column name="target_port" valueNumeric="8083"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="created_by" value="SYSTEM"/>
+        </insert>
+        <insert tableName="service_repositories">
+            <column name="id" valueNumeric="1"/>
+            <column name="service_id" valueNumeric="1"/>
+            <column name="git_provider" value="GITEA"/>
+            <column name="repo_name" value="order-service"/>
+            <column name="clone_url_http" value="http://localhost:3030/enterprise/order-service.git"/>
+            <column name="clone_url_ssh" value="git@localhost:2222:enterprise/order-service.git"/>
+            <column name="web_url" value="http://localhost:3030/enterprise/order-service"/>
+            <column name="default_branch" value="main"/>
+        </insert>
+        <insert tableName="service_deployments">
+            <column name="id" valueNumeric="1"/>
+            <column name="service_id" valueNumeric="1"/>
+            <column name="environment" value="DEV"/>
+            <column name="k8s_namespace" value="enterprise-dev"/>
+            <column name="k8s_deployment_name" value="order-service-deploy"/>
+            <column name="replicas" valueNumeric="1"/>
+            <column name="health_status" value="HEALTHY"/>
+        </insert>
+
+        <!-- 2. Inventory Service -->
+        <insert tableName="services">
+            <column name="id" valueNumeric="2"/>
+            <column name="service_code" value="inventory-service"/>
+            <column name="display_name" value="Admin Warehouse &amp; Inventory Service"/>
+            <column name="service_type" value="BACKEND_SPRING"/>
+            <column name="description" value="Quản lý tồn kho theo SKU, danh mục kho bãi và thực hiện điều chỉnh số lượng tồn"/>
+            <column name="owner_team" value="Warehouse Team"/>
+            <column name="target_port" valueNumeric="8082"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="created_by" value="SYSTEM"/>
+        </insert>
+        <insert tableName="service_repositories">
+            <column name="id" valueNumeric="2"/>
+            <column name="service_id" valueNumeric="2"/>
+            <column name="git_provider" value="GITEA"/>
+            <column name="repo_name" value="inventory-service"/>
+            <column name="clone_url_http" value="http://localhost:3030/enterprise/inventory-service.git"/>
+            <column name="clone_url_ssh" value="git@localhost:2222:enterprise/inventory-service.git"/>
+            <column name="web_url" value="http://localhost:3030/enterprise/inventory-service"/>
+            <column name="default_branch" value="main"/>
+        </insert>
+        <insert tableName="service_deployments">
+            <column name="id" valueNumeric="2"/>
+            <column name="service_id" valueNumeric="2"/>
+            <column name="environment" value="DEV"/>
+            <column name="k8s_namespace" value="enterprise-dev"/>
+            <column name="k8s_deployment_name" value="inventory-service-deploy"/>
+            <column name="replicas" valueNumeric="1"/>
+            <column name="health_status" value="HEALTHY"/>
+        </insert>
+
+        <!-- 3. Gateway Service -->
+        <insert tableName="services">
+            <column name="id" valueNumeric="3"/>
+            <column name="service_code" value="gateway-service"/>
+            <column name="display_name" value="Enterprise API Gateway"/>
+            <column name="service_type" value="BACKEND_SPRING"/>
+            <column name="description" value="Cửa ngõ định tuyến, Rate Limiting, xác thực Token Introspection thô và lọc Header độc hại"/>
+            <column name="owner_team" value="Platform Engineering"/>
+            <column name="target_port" valueNumeric="8080"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="created_by" value="SYSTEM"/>
+        </insert>
+        <insert tableName="service_repositories">
+            <column name="id" valueNumeric="3"/>
+            <column name="service_id" valueNumeric="3"/>
+            <column name="git_provider" value="GITEA"/>
+            <column name="repo_name" value="gateway-service"/>
+            <column name="clone_url_http" value="http://localhost:3030/enterprise/gateway-service.git"/>
+            <column name="clone_url_ssh" value="git@localhost:2222:enterprise/gateway-service.git"/>
+            <column name="web_url" value="http://localhost:3030/enterprise/gateway-service"/>
+            <column name="default_branch" value="main"/>
+        </insert>
+        <insert tableName="service_deployments">
+            <column name="id" valueNumeric="3"/>
+            <column name="service_id" valueNumeric="3"/>
+            <column name="environment" value="DEV"/>
+            <column name="k8s_namespace" value="enterprise-dev"/>
+            <column name="k8s_deployment_name" value="gateway-service-deploy"/>
+            <column name="replicas" valueNumeric="1"/>
+            <column name="health_status" value="HEALTHY"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005-sync-platform-sequences" author="antigravity">
+        <sql dbms="postgresql">
+            SELECT setval('services_id_seq', (SELECT COALESCE(MAX(id), 1) FROM services));
+            SELECT setval('service_repositories_id_seq', (SELECT COALESCE(MAX(id), 1) FROM service_repositories));
+            SELECT setval('service_deployments_id_seq', (SELECT COALESCE(MAX(id), 1) FROM service_deployments));
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

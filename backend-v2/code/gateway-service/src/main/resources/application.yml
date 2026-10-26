@@ -49,6 +49,14 @@ spring:
           filters:
             - StripPrefix=0
 
+        # Route: DevOps / Platform Service (Service Catalog, Git Management, CI/CD, K8s)
+        - id: devops-service
+          uri: ${DEVOPS_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/platform/**
+          filters:
+            - StripPrefix=0
+
 # Security / Token Introspection configuration
 security:
   auth-service:

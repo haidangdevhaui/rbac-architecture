@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_MULTIPLE_DATABASES: auth_rbac_db,inventory_db,order_db,keycloak_db
+      POSTGRES_MULTIPLE_DATABASES: auth_rbac_db,inventory_db,order_db,keycloak_db,platform_db,gitea_db
     ports:
       - "5432:5432"
     volumes:
@@ -114,11 +114,13 @@ services:
       AUTH_INTROSPECT_URL: http://auth-rbac-service:8081/internal/v1/auth/introspect
       INVENTORY_SERVICE_URL: http://inventory-service:8082
       ORDER_SERVICE_URL: http://order-service:8083
+      DEVOPS_SERVICE_URL: http://devops-service:8084
     ports:
       - "8080:8080"
     depends_on:
       - redis
       - auth-rbac-service
+      - devops-service
     networks:
       - backend-v2-net
 
@@ -166,6 +168,70 @@ services:
     networks:
       - backend-v2-net
 
+  # ============================================================================
+  # 8. Gitea - Lightweight Git Service (Bitbucket Replacement)
+  # ============================================================================
+  gitea:
+    image: gitea/gitea:1.22.3
+    container_name: backend-v2-gitea
+    restart: unless-stopped
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=postgres:5432
+      - GITEA__database__NAME=gitea_db
+      - GITEA__database__USER=postgres
+      - GITEA__database__PASSWD=postgres
+      - GITEA__server__DOMAIN=localhost
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__server__ROOT_URL=http://localhost:3030/
+      - GITEA__service__DISABLE_REGISTRATION=false
+      - GITEA__service__REQUIRE_SIGNIN_VIEW=false
+      - GITEA__api__ENABLE_SWAGGER=true
+      - GITEA__security__INSTALL_LOCK=true
+      - GITEA__admin__DEFAULT_ADMIN_USER=gitea_admin
+      - GITEA__admin__DEFAULT_ADMIN_EMAIL=admin@enterprise.local
+      - GITEA__admin__DEFAULT_ADMIN_PASSWORD=admin123
+    ports:
+      - "3030:3000"
+      - "2222:22"
+    volumes:
+      - gitea_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-v2-net
+
+  # ============================================================================
+  # 9. devops-service - Platform Control Plane (Git, CI/CD, K8s, Service Catalog)
+  # ============================================================================
+  devops-service:
+    build:
+      context: ./code
+      dockerfile: devops-service/Dockerfile
+    container_name: backend-v2-devops
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://postgres:5432/platform_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      GITEA_API_URL: http://gitea:3000/api/v1
+      GITEA_EXTERNAL_URL: http://localhost:3030
+      GITEA_ADMIN_USERNAME: gitea_admin
+      GITEA_ADMIN_PASSWORD: admin123
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gitea:
+        condition: service_started
+    networks:
+      - backend-v2-net
+
 networks:
   backend-v2-net:
     driver: bridge
@@ -173,3 +239,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  gitea_data:

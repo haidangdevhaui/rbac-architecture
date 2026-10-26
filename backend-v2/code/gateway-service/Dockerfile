@@ -1,5 +1,5 @@
 # Multi-stage Docker build for gateway-service
-FROM maven:3.9.8-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 
 COPY pom.xml .
@@ -8,6 +8,7 @@ COPY gateway-service/pom.xml gateway-service/
 COPY auth-rbac-service/pom.xml auth-rbac-service/
 COPY inventory-service/pom.xml inventory-service/
 COPY order-service/pom.xml order-service/
+COPY devops-service/pom.xml devops-service/
 
 COPY common-security/src common-security/src
 COPY gateway-service/src gateway-service/src

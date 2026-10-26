@@ -8,6 +8,8 @@ import {
   User,
   LogIn,
   LogOut,
+  Server,
+  Package,
 } from "lucide-react";
 
 export interface ShellUser {
@@ -31,7 +33,7 @@ export interface ShellLayoutProps {
 export function ShellLayout({
   children,
   activePath = "/",
-  currentTeam = "Module Federation 2.0 Host Portal",
+  currentTeam = "Enterprise Portal Host Shell",
   onNavigate,
   user,
   isAuthenticated = false,
@@ -39,10 +41,12 @@ export function ShellLayout({
   onLogout,
 }: ShellLayoutProps) {
   const menuItems = [
-    { label: "Tổng Quan Hệ Thống", path: "/", icon: LayoutDashboard },
-    { label: "Team 1: Duyệt Đơn (Approval)", path: "/approvals", icon: FileCheck },
-    { label: "Team 2: Tích Hợp (Integration)", path: "/integrations", icon: RefreshCw },
-    { label: "Team 3: Cấu Hình (System)", path: "/system", icon: Sliders },
+    { label: "Dashboard Overview", path: "/", icon: LayoutDashboard },
+    { label: "Service Catalog & Platform", path: "/services", icon: Server },
+    { label: "Domain: Inventory & Orders", path: "/backend-v2", icon: Package },
+    { label: "Approval Workflows", path: "/approvals", icon: FileCheck },
+    { label: "Integration Bridge", path: "/integrations", icon: RefreshCw },
+    { label: "System Settings", path: "/system", icon: Sliders },
   ];
 
   return (
@@ -54,7 +58,7 @@ export function ShellLayout({
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white tracking-wide">ENTERPRISE MF</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide">ENTERPRISE PORTAL</h1>
             <p className="text-[10px] text-blue-400 font-mono">Module Federation 2.0</p>
           </div>
         </div>
@@ -83,7 +87,7 @@ export function ShellLayout({
 
         {/* Runtime info footer */}
         <div className="p-4 border-t border-slate-800 text-[11px] text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-400">Kiến trúc: Rspack + MF 2.0</p>
+          <p className="font-semibold text-slate-400">Architecture: Rspack + MF 2.0</p>
           <p className="text-[10px] text-emerald-400">● Dynamic Runtime Linking</p>
           <p className="text-[10px] text-slate-500">Zero Page Reload (SPA)</p>
         </div>
@@ -105,14 +109,14 @@ export function ShellLayout({
                   <User className="w-4 h-4" />
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-800">{user?.name || "Người Dùng Keycloak"}</p>
-                  <p className="text-[10px] text-emerald-600 font-semibold">{user?.role || "Đã Xác Thực"}</p>
+                  <p className="text-xs font-bold text-slate-800">{user?.name || "Keycloak User"}</p>
+                  <p className="text-[10px] text-emerald-600 font-semibold">{user?.role || "Authenticated"}</p>
                 </div>
                 {onLogout && (
                   <button
                     type="button"
                     onClick={onLogout}
-                    title="Đăng xuất khỏi Keycloak"
+                    title="Sign Out from Keycloak"
                     className="p-1.5 ml-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
@@ -126,7 +130,7 @@ export function ShellLayout({
                 className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Đăng nhập Keycloak</span>
+                <span>Sign In with Keycloak</span>
               </button>
             ) : (
               <div className="flex items-center gap-3">
@@ -134,7 +138,7 @@ export function ShellLayout({
                   <User className="w-4 h-4" />
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-800">Ban Giám Đốc</p>
+                  <p className="text-xs font-bold text-slate-800">Executive Board</p>
                   <p className="text-[10px] text-slate-400">Administrator</p>
                 </div>
               </div>

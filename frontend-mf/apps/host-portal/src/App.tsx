@@ -16,6 +16,7 @@ import {
   LogOut,
   ExternalLink,
   UserCheck,
+  Server,
 } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
 
@@ -24,6 +25,8 @@ const RemoteApprovalApp = React.lazy(() => import("approvalApp/ApprovalApp"));
 const RemoteApprovalWidget = React.lazy(() => import("approvalApp/ApprovalWidget"));
 const RemoteIntegrationApp = React.lazy(() => import("integrationApp/IntegrationApp"));
 const RemoteLegacySyncWidget = React.lazy(() => import("integrationApp/LegacySyncWidget"));
+const RemotePlatformApp = React.lazy(() => import("platformApp/PlatformApp"));
+const RemotePlatformWidget = React.lazy(() => import("platformApp/PlatformWidget"));
 
 // 2. Resilient Error Boundary for Micro-Frontends
 interface ErrorBoundaryProps {
@@ -60,11 +63,11 @@ class RemoteErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
           </div>
           <h3 className="font-bold text-slate-900 text-sm">{this.props.fallbackTitle}</h3>
           <p className="text-xs text-slate-500">
-            Không thể tải remote module từ{" "}
+            Failed to load remote module from{" "}
             <code className="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-mono">
               http://localhost:{this.props.port}
             </code>
-            . Vui lòng kiểm tra xem tiến trình dev của team này đã chạy chưa.
+            . Please verify that this remote service is running.
           </p>
           <div className="pt-2">
             <Button
@@ -72,7 +75,7 @@ class RemoteErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
               size="sm"
               onClick={() => this.setState({ hasError: false })}
             >
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Thử tải lại
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry
             </Button>
           </div>
         </Card>
@@ -83,7 +86,30 @@ class RemoteErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
 }
 
 export function App() {
-  const [activePath, setActivePath] = useState<string>("/");
+  const [activePath, setActivePath] = useState<string>(() => {
+    if (typeof window !== "undefined" && window.location.pathname) {
+      const p = window.location.pathname;
+      if (["/services", "/platform", "/backend-v2", "/approvals", "/integrations", "/system"].includes(p)) {
+        return p;
+      }
+    }
+    return "/";
+  });
+
+  const handleNavigate = (path: string) => {
+    setActivePath(path);
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", path);
+    }
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setActivePath(window.location.pathname || "/");
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   const {
     isAuthenticated,
     isLoading,
@@ -105,16 +131,19 @@ export function App() {
 
   const getCurrentTeamTitle = () => {
     switch (activePath) {
+      case "/services":
+      case "/platform":
+        return "Service Catalog & Cloud Platform (Port 3003)";
       case "/approvals":
         return "Team 1: Approval & Workflow Remote (Port 3001)";
       case "/integrations":
         return "Team 2: Integration & Legacy Bridge Remote (Port 3002)";
       case "/backend-v2":
-        return "Backend V2: Gateway & Microservices Admin";
+        return "Domain Services: Inventory & Orders Admin";
       case "/system":
-        return "Team 3: Master Data & System Management";
+        return "Team 3: System Settings & Security";
       default:
-        return "Host Shell Portal (Port 3000)";
+        return "Enterprise Portal Host Shell (Port 3000)";
     }
   };
 
@@ -127,12 +156,12 @@ export function App() {
       setInventoryList(data);
       setApiFeedback({
         type: "success",
-        message: `Tải thành công ${data.length} mặt hàng từ inventory-service qua Gateway (8080)!`,
+        message: `Successfully loaded ${data.length} stock items from inventory-service via Gateway (8080)!`,
       });
     } catch (err: any) {
       setApiFeedback({
         type: "error",
-        message: `Lỗi gọi inventory-service: ${err.message}`,
+        message: `Error calling inventory-service: ${err.message}`,
       });
     } finally {
       setApiLoading(null);
@@ -148,12 +177,12 @@ export function App() {
       setOrdersList(data);
       setApiFeedback({
         type: "success",
-        message: `Tải thành công ${data.length} đơn hàng từ order-service qua Gateway (8080)!`,
+        message: `Successfully loaded ${data.length} orders from order-service via Gateway (8080)!`,
       });
     } catch (err: any) {
       setApiFeedback({
         type: "error",
-        message: `Lỗi gọi order-service: ${err.message}`,
+        message: `Error calling order-service: ${err.message}`,
       });
     } finally {
       setApiLoading(null);
@@ -166,18 +195,18 @@ export function App() {
     try {
       await callGatewayApi(`/api/v1/orders/${orderId}/approve`, {
         method: "POST",
-        body: JSON.stringify({ comment: `Phê duyệt bởi ${user?.name || "Admin"} từ Host Portal` }),
+        body: JSON.stringify({ comment: `Approved by ${user?.name || "Admin"} from Host Portal` }),
       });
       setApiFeedback({
         type: "success",
-        message: `Đã phê duyệt thành công đơn hàng #${orderId}!`,
+        message: `Successfully approved order #${orderId}!`,
       });
       // Refresh list
       handleFetchOrders();
     } catch (err: any) {
       setApiFeedback({
         type: "error",
-        message: `Không thể duyệt đơn: ${err.message}`,
+        message: `Could not approve order: ${err.message}`,
       });
     } finally {
       setApiLoading(null);
@@ -196,13 +225,13 @@ export function App() {
     <ShellLayout
       activePath={activePath}
       currentTeam={getCurrentTeamTitle()}
-      onNavigate={(path) => setActivePath(path)}
+      onNavigate={handleNavigate}
       user={user}
       isAuthenticated={isAuthenticated}
       onLogin={login}
       onLogout={logout}
     >
-      {/* 1. Tổng quan Dashboard (Host Trang Chủ) */}
+      {/* 1. Dashboard Overview */}
       {activePath === "/" && (
         <div className="space-y-6 max-w-6xl mx-auto">
           {/* Welcome Banner */}
@@ -216,21 +245,29 @@ export function App() {
               </span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
-              Enterprise Micro-Frontends với Module Federation 2.0 & Keycloak SSO
+              Enterprise Micro-Frontends with Module Federation 2.0 & Keycloak SSO
             </h1>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Các team phát triển và deploy hoàn toàn độc lập mà không cần rebuild Host App.
-              Tích hợp xác thực chuẩn OIDC với Keycloak, tự động đồng bộ tài khoản nội bộ (JIT Provisioning) và phân quyền 2 lớp tại Spring Cloud Gateway.
+              Teams build and deploy completely independently without rebuilding the Host application.
+              Integrated OIDC authentication with Keycloak, automated Just-In-Time (JIT) provisioning, and two-layer RBAC authorization at Spring Cloud Gateway.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white"
+                onClick={() => handleNavigate("/services")}
+              >
+                <Server className="w-3.5 h-3.5 mr-1.5" /> Service Catalog & Platform
+              </Button>
               {isAuthenticated ? (
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => setActivePath("/backend-v2")}
+                  onClick={() => handleNavigate("/backend-v2")}
                 >
-                  <Package className="w-3.5 h-3.5 mr-1.5" /> Quản Trị Kho & Đơn Hàng (Backend V2)
+                  <Package className="w-3.5 h-3.5 mr-1.5" /> Domain: Inventory & Orders
                 </Button>
               ) : (
                 <Button
@@ -238,24 +275,24 @@ export function App() {
                   size="sm"
                   onClick={login}
                 >
-                  <LogIn className="w-3.5 h-3.5 mr-1.5" /> Đăng Nhập Với Keycloak Ngay
+                  <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Keycloak
                 </Button>
               )}
               <Button
                 variant="outline"
                 size="sm"
                 className="bg-transparent text-white border-slate-700 hover:bg-slate-800"
-                onClick={() => setActivePath("/approvals")}
+                onClick={() => handleNavigate("/approvals")}
               >
-                Mở Module Duyệt Đơn (Team 1) <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                Approval Workflows <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="bg-transparent text-white border-slate-700 hover:bg-slate-800"
-                onClick={() => setActivePath("/integrations")}
+                onClick={() => handleNavigate("/integrations")}
               >
-                Mở Module Tích Hợp (Team 2) <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                Integration Bridge <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             </div>
           </div>
@@ -265,12 +302,12 @@ export function App() {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                 <Key className="w-4 h-4 text-blue-600" />
-                Trạng Thái Xác Thực Keycloak & Backend V2 RBAC
+                Keycloak Authentication & Backend V2 RBAC Status
               </h3>
               {isAuthenticated ? (
                 <Badge variant="success">SSO Authenticated</Badge>
               ) : (
-                <Badge variant="warning">Chưa Đăng Nhập</Badge>
+                <Badge variant="warning">Unauthenticated</Badge>
               )}
             </div>
 
@@ -288,10 +325,10 @@ export function App() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={refreshBackendProfile}>
-                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> Đồng bộ RBAC
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> Sync RBAC Profile
                     </Button>
                     <Button variant="danger" size="sm" onClick={logout}>
-                      <LogOut className="w-3.5 h-3.5 mr-1" /> Đăng Xuất
+                      <LogOut className="w-3.5 h-3.5 mr-1" /> Sign Out
                     </Button>
                   </div>
                 </div>
@@ -299,7 +336,7 @@ export function App() {
                 {/* Identity & RBAC Mapping Details */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Định danh Keycloak (IdP)</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Keycloak Identity (IdP)</span>
                     <p className="font-mono text-slate-700 truncate" title={user?.sub}>
                       sub: {user?.sub}
                     </p>
@@ -307,23 +344,23 @@ export function App() {
                   </div>
 
                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Định danh nội bộ (Backend V2)</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Internal Identity (Backend V2)</span>
                     <p className="font-bold text-slate-800">
-                      Mã: {backendProfile?.userCode || "Đang tải..."} (ID: #{backendProfile?.internalUserId || "-"})
+                      Code: {backendProfile?.userCode || "Loading..."} (ID: #{backendProfile?.internalUserId || "-"})
                     </p>
                     <p className="text-slate-500">
-                      Trạng thái: <span className="text-emerald-600 font-semibold">{backendProfile?.active ? "ACTIVE" : "PENDING"}</span>
+                      Status: <span className="text-emerald-600 font-semibold">{backendProfile?.active ? "ACTIVE" : "PENDING"}</span>
                     </p>
                   </div>
 
                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Vai trò RBAC (Roles)</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">RBAC Roles</span>
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       {backendProfile?.roles?.map((r) => (
                         <span key={r} className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-semibold">
                           {r}
                         </span>
-                      )) || <span className="text-slate-400">Chưa gán vai trò</span>}
+                      )) || <span className="text-slate-400">No roles assigned</span>}
                     </div>
                   </div>
                 </div>
@@ -331,7 +368,7 @@ export function App() {
                 {/* Permissions pills */}
                 {backendProfile?.permissions && backendProfile.permissions.length > 0 && (
                   <div className="space-y-1 pt-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Quyền chi tiết (Permissions):</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Effective Permissions:</span>
                     <div className="flex flex-wrap gap-1.5">
                       {backendProfile.permissions.map((p) => (
                         <code key={p} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[11px]">
@@ -346,24 +383,24 @@ export function App() {
               <Card className="p-6 border-l-4 border-l-blue-600 bg-white space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-slate-900">Đăng Nhập Đơn Điểm (SSO) Với Keycloak</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Single Sign-On (SSO) with Keycloak</h4>
                     <p className="text-xs text-slate-500">
                       Realm: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">enterprise</code> • Client: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">admin-portal</code>
                     </p>
                   </div>
                   <Button variant="primary" size="sm" onClick={login}>
-                    <LogIn className="w-3.5 h-3.5 mr-1.5" /> Đăng nhập Keycloak
+                    <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Keycloak
                   </Button>
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 space-y-1">
-                  <p className="font-semibold">Tài khoản demo có sẵn trong Keycloak:</p>
+                  <p className="font-semibold">Pre-configured Demo Accounts in Keycloak:</p>
                   <ul className="list-disc list-inside space-y-0.5 text-[11px] text-blue-700">
                     <li>
-                      <strong>Super Admin:</strong> username: <code className="font-mono font-bold">admin</code> / password: <code className="font-mono">admin123</code> (Có toàn quyền quản lý kho và đơn hàng)
+                      <strong>Super Admin:</strong> username: <code className="font-mono font-bold">admin</code> / password: <code className="font-mono">admin123</code> (Full platform & domain administration)
                     </li>
                     <li>
-                      <strong>Warehouse Manager:</strong> username: <code className="font-mono font-bold">warehouse_mgr</code> / password: <code className="font-mono">pass123</code> (Quản lý kho)
+                      <strong>Warehouse Manager:</strong> username: <code className="font-mono font-bold">warehouse_mgr</code> / password: <code className="font-mono">pass123</code> (Warehouse management)
                     </li>
                   </ul>
                 </div>
@@ -371,12 +408,24 @@ export function App() {
             )}
           </div>
 
+          {/* Platform & DevOps Hub Widget */}
+          <div className="space-y-3">
+            <RemoteErrorBoundary fallbackTitle="Platform Widget Not Started" port={3003}>
+              <Suspense fallback={<div className="text-xs text-slate-400">Loading platform widget...</div>}>
+                <RemotePlatformWidget
+                  token={token}
+                  onNavigateToCatalog={() => handleNavigate("/services")}
+                />
+              </Suspense>
+            </RemoteErrorBoundary>
+          </div>
+
           {/* Cross-Team Widgets Demonstration */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-blue-600" />
-                Chứng Minh Nhúng Chéo Widget Giữa Các Remote (Cross-Remote Embedding)
+                Cross-Remote Widget Embedding Demonstration
               </h3>
               <Badge variant="success">Runtime Composition</Badge>
             </div>
@@ -385,14 +434,14 @@ export function App() {
               {/* Widget Team 1 */}
               <Card className="p-5 space-y-3 border-l-4 border-l-blue-600">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Widget từ Team 1 (Approval)</span>
+                  <span className="text-xs font-bold text-slate-800">Widget from Team 1 (Approval)</span>
                   <span className="text-[10px] font-mono text-slate-400">Port 3001</span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Component này được tải trực tiếp từ server của Team 1 và nhúng vào màn hình tổng:
+                  This component is loaded over the network from Team 1 and embedded dynamically:
                 </p>
-                <RemoteErrorBoundary fallbackTitle="Team 1 Widget Tạm Thời Chưa Chạy" port={3001}>
-                  <Suspense fallback={<div className="text-xs text-slate-400">Đang nạp widget...</div>}>
+                <RemoteErrorBoundary fallbackTitle="Team 1 Widget Not Available" port={3001}>
+                  <Suspense fallback={<div className="text-xs text-slate-400">Loading widget...</div>}>
                     <RemoteApprovalWidget pendingCount={2} />
                   </Suspense>
                 </RemoteErrorBoundary>
@@ -401,14 +450,14 @@ export function App() {
               {/* Widget Team 2 */}
               <Card className="p-5 space-y-3 border-l-4 border-l-purple-600">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Widget từ Team 2 (Integration)</span>
+                  <span className="text-xs font-bold text-slate-800">Widget from Team 2 (Integration)</span>
                   <span className="text-[10px] font-mono text-slate-400">Port 3002</span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Component này do Team 2 phát triển và xuất bản qua Module Federation:
+                  This component is published by Team 2 via Module Federation 2.0:
                 </p>
-                <RemoteErrorBoundary fallbackTitle="Team 2 Widget Tạm Thời Chưa Chạy" port={3002}>
-                  <Suspense fallback={<div className="text-xs text-slate-400">Đang nạp widget...</div>}>
+                <RemoteErrorBoundary fallbackTitle="Team 2 Widget Not Available" port={3002}>
+                  <Suspense fallback={<div className="text-xs text-slate-400">Loading widget...</div>}>
                     <RemoteLegacySyncWidget
                       documentCode="DOC-MF-001"
                       legacyVoucherId="VOUCHER_LEGACY_98821"
@@ -429,10 +478,10 @@ export function App() {
             <div>
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Package className="w-5 h-5 text-blue-600" />
-                Backend V2: Microservices Management
+                Domain Microservices: Inventory & Orders Admin
               </h2>
               <p className="text-xs text-slate-500">
-                Giao tiếp trực tiếp với Spring Cloud Gateway (Port 8080) sử dụng JWT Bearer Token từ Keycloak.
+                Direct communication with Spring Cloud Gateway (Port 8080) secured by Keycloak JWT Bearer Token.
               </p>
             </div>
 
@@ -445,7 +494,7 @@ export function App() {
                   handleFetchOrders();
                 }}
               >
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Làm mới dữ liệu
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh Data
               </Button>
             </div>
           </div>
@@ -473,12 +522,12 @@ export function App() {
               <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 mx-auto flex items-center justify-center">
                 <Key className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-sm">Cần Đăng Nhập Keycloak Để Thao Tác</h3>
+              <h3 className="font-bold text-slate-900 text-sm">Keycloak Authentication Required</h3>
               <p className="text-xs text-slate-500">
-                Gateway yêu cầu Bearer JWT hợp lệ và quyền RBAC tương ứng để truy cập inventory-service và order-service.
+                Gateway requires a valid Bearer JWT and corresponding RBAC permissions to access inventory-service and order-service.
               </p>
               <Button variant="primary" size="sm" onClick={login}>
-                <LogIn className="w-3.5 h-3.5 mr-1.5" /> Đăng nhập Keycloak
+                <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Keycloak
               </Button>
             </Card>
           ) : (
@@ -488,14 +537,14 @@ export function App() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-blue-600" />
-                    <h3 className="font-bold text-sm text-slate-900">Quản Lý Tồn Kho (inventory-service)</h3>
+                    <h3 className="font-bold text-sm text-slate-900">Inventory Stocks (inventory-service)</h3>
                   </div>
                   <Badge variant="info">Port 8082</Badge>
                 </div>
 
                 <div className="space-y-2">
                   {inventoryList.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">Chưa có dữ liệu hoặc đang tải...</p>
+                    <p className="text-xs text-slate-400 py-4 text-center">No inventory items found or loading...</p>
                   ) : (
                     <div className="space-y-2">
                       {inventoryList.map((item: any) => (
@@ -506,12 +555,12 @@ export function App() {
                           <div>
                             <p className="font-semibold text-slate-800">{item.productName}</p>
                             <p className="text-[11px] text-slate-400 font-mono">
-                              SKU: {item.sku} • Kho: {item.warehouse?.name}
+                              SKU: {item.sku} • Warehouse: {item.warehouse?.name}
                             </p>
                           </div>
                           <div className="text-right">
                             <span className="text-sm font-bold text-slate-900">{item.quantity}</span>
-                            <p className="text-[10px] text-slate-400">cái tồn</p>
+                            <p className="text-[10px] text-slate-400">in stock</p>
                           </div>
                         </div>
                       ))}
@@ -525,14 +574,14 @@ export function App() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <ShoppingCart className="w-4 h-4 text-purple-600" />
-                    <h3 className="font-bold text-sm text-slate-900">Quản Lý Đơn Hàng (order-service)</h3>
+                    <h3 className="font-bold text-sm text-slate-900">Orders Management (order-service)</h3>
                   </div>
                   <Badge variant="info">Port 8083</Badge>
                 </div>
 
                 <div className="space-y-2">
                   {ordersList.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">Chưa có dữ liệu hoặc đang tải...</p>
+                    <p className="text-xs text-slate-400 py-4 text-center">No orders found or loading...</p>
                   ) : (
                     <div className="space-y-2">
                       {ordersList.map((order: any) => (
@@ -545,18 +594,18 @@ export function App() {
                               {order.orderCode}
                             </span>
                             {order.status === "APPROVED" ? (
-                              <Badge variant="success">Đã Duyệt</Badge>
+                              <Badge variant="success">Approved</Badge>
                             ) : order.status === "PENDING_APPROVAL" ? (
-                              <Badge variant="warning">Chờ Duyệt</Badge>
+                              <Badge variant="warning">Pending Approval</Badge>
                             ) : (
                               <Badge variant="danger">{order.status}</Badge>
                             )}
                           </div>
 
                           <div className="flex items-center justify-between text-slate-600 text-[11px]">
-                            <span>Khách hàng: <strong>{order.customerName}</strong></span>
+                            <span>Customer: <strong>{order.customerName}</strong></span>
                             <span>
-                              Tổng tiền: <strong>{Number(order.totalAmount).toLocaleString("vi-VN")} {order.currency}</strong>
+                              Total: <strong>{Number(order.totalAmount).toLocaleString("en-US")} {order.currency}</strong>
                             </span>
                           </div>
 
@@ -567,7 +616,7 @@ export function App() {
                                 variant="primary"
                                 onClick={() => handleApproveOrder(order.id)}
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Duyệt đơn này
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Approve Order
                               </Button>
                             </div>
                           )}
@@ -585,14 +634,14 @@ export function App() {
       {/* 3. Team 1: Approval Remote View */}
       {activePath === "/approvals" && (
         <RemoteErrorBoundary
-          fallbackTitle="Team 1 Remote App Chưa Khởi Chạy"
+          fallbackTitle="Team 1 Remote App Not Started"
           port={3001}
         >
           <Suspense
             fallback={
               <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-400 text-xs gap-3">
                 <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>Đang nạp động module Team 1 qua mạng từ port 3001...</span>
+                <span>Loading Team 1 Approval module from port 3001...</span>
               </div>
             }
           >
@@ -604,18 +653,43 @@ export function App() {
       {/* 4. Team 2: Integration Remote View */}
       {activePath === "/integrations" && (
         <RemoteErrorBoundary
-          fallbackTitle="Team 2 Remote App Chưa Khởi Chạy"
+          fallbackTitle="Team 2 Remote App Not Started"
           port={3002}
         >
           <Suspense
             fallback={
               <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-400 text-xs gap-3">
                 <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                <span>Đang nạp động module Team 2 qua mạng từ port 3002...</span>
+                <span>Loading Team 2 Integration module from port 3002...</span>
               </div>
             }
           >
             <RemoteIntegrationApp />
+          </Suspense>
+        </RemoteErrorBoundary>
+      )}
+
+      {/* Platform & DevOps: Service Catalog, Git, CI/CD, K8s (Port 3003) */}
+      {(activePath === "/platform" || activePath === "/services" || activePath === "/git" || activePath === "/k8s") && (
+        <RemoteErrorBoundary
+          fallbackTitle="Platform & DevOps Remote Not Started"
+          port={3003}
+        >
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-400 text-xs gap-3">
+                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <span>Loading Platform & DevOps module from port 3003...</span>
+              </div>
+            }
+          >
+            <RemotePlatformApp
+              token={token}
+              userPermissions={backendProfile?.permissions || []}
+              gatewayUrl="http://localhost:8080"
+              initialTab="catalog"
+              onNavigate={handleNavigate}
+            />
           </Suspense>
         </RemoteErrorBoundary>
       )}
@@ -626,9 +700,9 @@ export function App() {
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 mx-auto flex items-center justify-center">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-slate-900 text-sm">Team 3: System & Security Management</h3>
+          <h3 className="font-bold text-slate-900 text-sm">Team 3: System Settings & Security</h3>
           <p className="text-xs text-slate-500">
-            Module quản lý phân quyền (RBAC), phòng ban và danh mục dùng chung.
+            Role-Based Access Control (RBAC), user directory, and shared master data management.
           </p>
         </Card>
       )}

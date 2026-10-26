@@ -26,3 +26,25 @@ declare module "integrationApp/LegacySyncWidget" {
   const LegacySyncWidget: React.ComponentType<LegacySyncWidgetProps>;
   export default LegacySyncWidget;
 }
+
+declare module "platformApp/PlatformApp" {
+  import React from "react";
+  export interface PlatformAppProps {
+    isStandalone?: boolean;
+    token?: string;
+    userPermissions?: string[];
+    gatewayUrl?: string;
+  }
+  const PlatformApp: React.ComponentType<PlatformAppProps>;
+  export default PlatformApp;
+}
+
+declare module "platformApp/PlatformWidget" {
+  import React from "react";
+  export interface PlatformWidgetProps {
+    onNavigateToCatalog?: () => void;
+    token?: string;
+  }
+  const PlatformWidget: React.ComponentType<PlatformWidgetProps>;
+  export default PlatformWidget;
+}

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-dev
+  labels:
+    environment: dev
+    platform: enterprise-portal

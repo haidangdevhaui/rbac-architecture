@@ -56,6 +56,7 @@ export default defineConfig({
       remotes: {
         approvalApp: "approvalApp@http://localhost:3001/mf-manifest.json",
         integrationApp: "integrationApp@http://localhost:3002/mf-manifest.json",
+        platformApp: "platformApp@http://localhost:3003/mf-manifest.json",
       },
       shared: {
         react: { singleton: true, eager: true, requiredVersion: "^18.3.0" },
@@ -68,7 +69,7 @@ export default defineConfig({
       chunks: ["main"],
       templateContent: `
         <!DOCTYPE html>
-        <html lang="vi">
+        <html lang="en">
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">

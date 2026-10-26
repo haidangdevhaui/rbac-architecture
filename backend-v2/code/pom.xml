@@ -35,6 +35,7 @@
         <module>auth-rbac-service</module>
         <module>inventory-service</module>
         <module>order-service</module>
+        <module>devops-service</module>
     </modules>
 
     <dependencyManagement>

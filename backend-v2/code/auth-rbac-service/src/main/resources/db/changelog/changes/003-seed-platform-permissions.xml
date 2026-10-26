@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005-seed-platform-permissions" author="antigravity">
+        <!-- Platform & DevOps Permissions -->
+        <insert tableName="permissions">
+            <column name="id" valueNumeric="10"/>
+            <column name="code" value="platform:service:create"/>
+            <column name="resource" value="platform"/>
+            <column name="action" value="create"/>
+            <column name="description" value="Provision new microservice and git repository"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="id" valueNumeric="11"/>
+            <column name="code" value="platform:service:read"/>
+            <column name="resource" value="platform"/>
+            <column name="action" value="read"/>
+            <column name="description" value="View service catalog and repository metadata"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="id" valueNumeric="12"/>
+            <column name="code" value="platform:git:read"/>
+            <column name="resource" value="platform"/>
+            <column name="action" value="read"/>
+            <column name="description" value="View git commits, branches and code tree"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="id" valueNumeric="13"/>
+            <column name="code" value="platform:k8s:view"/>
+            <column name="resource" value="platform"/>
+            <column name="action" value="read"/>
+            <column name="description" value="Monitor Kubernetes workloads and pod status"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="006-assign-platform-permissions-to-admin" author="antigravity">
+        <!-- ROLE_ADMIN (id=1) gets all platform permissions -->
+        <insert tableName="role_permissions"><column name="role_id" valueNumeric="1"/><column name="permission_id" valueNumeric="10"/></insert>
+        <insert tableName="role_permissions"><column name="role_id" valueNumeric="1"/><column name="permission_id" valueNumeric="11"/></insert>
+        <insert tableName="role_permissions"><column name="role_id" valueNumeric="1"/><column name="permission_id" valueNumeric="12"/></insert>
+        <insert tableName="role_permissions"><column name="role_id" valueNumeric="1"/><column name="permission_id" valueNumeric="13"/></insert>
+    </changeSet>
+
+</databaseChangeLog>
